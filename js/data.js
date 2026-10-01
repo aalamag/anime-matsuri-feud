@@ -2,7 +2,7 @@
 // edit them in /admin. Answers are listed top-ranked first.
 
 export const DEFAULT_CONFIG = {
-  version: 1,
+  version: 2,
   title: 'Anime Matsuri',
   subtitle: 'Sakura & Spirits',
   season: 'Anime Matsuri Season 2',
@@ -10,15 +10,16 @@ export const DEFAULT_CONFIG = {
 
   // Main-game lineup: question id from the bank + point multiplier.
   rounds: [
-    { qid: 'r-recognize', mult: 1, label: 'Single Points' },
-    { qid: 'r-opening',   mult: 2, label: 'Double Points' },
-    { qid: 'r-couple',    mult: 2, label: 'Double Points' },          // NEW (replaces "power you'd want")
-    { qid: 'r-roommate',  mult: 3, label: 'Triple Points' },
-    { qid: 'r-teacher',   mult: 3, label: 'Triple Points' },          // NEW (replaces "made viewers cry")
-    { qid: 'r-female',    mult: 3, label: 'Anime Matsuri Special' },  // NEW (replaces "world to visit", a repeat of FM Q5)
+    { qid: 'r-pokemon', mult: 1, label: 'Single Points' },
+    { qid: 'r-couple',  mult: 2, label: 'Double Points' },
+    { qid: 'r-teacher', mult: 2, label: 'Double Points' },
+    { qid: 'r-never',   mult: 3, label: 'Triple Points' },
+    { qid: 'r-female',  mult: 3, label: 'Triple Points' },  // last round — its intro says "Final Round"
   ],
 
+  // Off by default: the game ends after the last round and the highest score wins.
   fastMoney: {
+    enabled: false,
     qids: ['fm-never', 'fm-pokemon', 'fm-food', 'fm-hair', 'fm-world'], // fm-pokemon is NEW (replaces "anime weapon")
     target: 200,
     players: 2,           // classic Fast Money: 2 players, 2nd can't repeat the 1st
@@ -34,18 +35,20 @@ export const DEFAULT_CONFIG = {
     { id: 'r-opening', kind: 'round', q: 'Name an anime opening song people instantly recognize.', answers: [
       ['Blue Bird — Naruto', 22], ['Gurenge — Demon Slayer', 18], ['We Are! — One Piece', 15], ['Cha-La Head-Cha-La — Dragon Ball Z', 14],
       ['Pokémon Theme', 11], ['The Rumbling — Attack on Titan', 8], ['Silhouette — Naruto', 7], ['Idol — Oshi no Ko', 5] ] },
-    { id: 'r-couple', kind: 'round', isNew: true, q: 'Name a famous anime couple.', answers: [
+    { id: 'r-couple', kind: 'round', isNew: true, q: 'Name the most popular anime couple.', answers: [
       ['Naruto & Hinata', 22], ['Kirito & Asuna', 18], ['Goku & Chi-Chi', 14], ['Taki & Mitsuha — Your Name', 12],
       ['Loid & Yor — Spy x Family', 11], ['Inuyasha & Kagome', 8], ['Usagi & Mamoru — Sailor Moon', 7], ['Ichigo & Orihime', 5] ] },
-    { id: 'r-teacher', kind: 'round', isNew: true, q: 'Name the best anime teacher or mentor.', answers: [
+    { id: 'r-teacher', kind: 'round', isNew: true, q: 'Name the best anime sensei.', answers: [
       ['Kakashi', 23], ['Gojo', 19], ['Koro-sensei', 15], ['All Might', 13],
       ['Jiraiya', 10], ['Master Roshi', 8], ['Urokodaki', 6], ['Onizuka — GTO', 5] ] },
-    { id: 'r-pokemon', kind: 'round', isNew: true, q: 'Name a popular Pokémon.', answers: [
+    { id: 'r-pokemon', kind: 'round', isNew: true, q: 'Name the most popular Pokémon.', answers: [
       ['Pikachu', 30], ['Charizard', 18], ['Eevee', 13], ['Mewtwo', 10],
       ['Gengar', 8], ['Snorlax', 7], ['Lucario', 5], ['Bulbasaur', 4] ] },
     { id: 'r-female', kind: 'round', isNew: true, q: 'Name the best female anime character.', answers: [
       ['Mikasa', 20], ['Nezuko', 16], ['Sailor Moon', 13], ['Hinata', 12],
       ['Erza Scarlet', 10], ['Nami', 9], ['Yor Forger', 8], ['Frieren', 6] ] },
+    { id: 'r-never', kind: 'round', isNew: true, q: 'Name an anime character known for never giving up.', answers: [
+      ['Naruto', 26], ['Luffy', 20], ['Tanjiro', 15], ['Goku', 12], ['Deku', 10], ['Rock Lee', 7], ['Asta', 6], ['Ichigo', 4] ] },
     { id: 'r-roommate', kind: 'round', q: 'Name an anime character you would want as a roommate.', answers: [
       ['Anya', 21], ['Gojo', 18], ['Luffy', 14], ['Tanjiro', 13], ['Frieren', 11], ['Senku', 9], ['Denji', 8], ['Saitama', 6] ] },
     // Original PPT rounds kept as alternates (swapped out of the default lineup).

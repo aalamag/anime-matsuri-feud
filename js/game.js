@@ -23,7 +23,7 @@ function resolveConfig(cfg) {
   const byId = Object.fromEntries(cfg.bank.map((q) => [q.id, q]));
   const toQ = (q) => ({ q: q.q, answers: q.answers.map(([t, p]) => ({ t, p: Number(p) || 0 })) });
   const rounds = cfg.rounds.filter((r) => byId[r.qid]).map((r) => ({ ...toQ(byId[r.qid]), mult: Number(r.mult) || 1, label: r.label || `${MULT_NAME[r.mult] || ''} Points` }));
-  const fmQs = cfg.fastMoney.qids.filter((id) => byId[id]).map((id) => toQ(byId[id]));
+  const fmQs = cfg.fastMoney.enabled === false ? [] : cfg.fastMoney.qids.filter((id) => byId[id]).map((id) => toQ(byId[id]));
   return { rounds, fmQs };
 }
 
@@ -31,6 +31,7 @@ function newGame() {
   const cfg = loadConfig();
   const { rounds, fmQs } = resolveConfig(cfg);
   return {
+    v: cfg.version,
     screen: 'title',
     meta: { title: cfg.title, subtitle: cfg.subtitle, season: cfg.season },
     teams: cfg.teams.map((name) => ({ name, players: ['', '', '', '', ''], score: 0 })),
@@ -143,7 +144,8 @@ const A = {
       else if (s === 'intro') { S.screen = 'board'; fx('whoosh'); }
       else if (s === 'board') {
         if (S.ri < S.rounds.length - 1) startRound(S.ri + 1);
-        else { S.screen = 'mid'; fx('fanfare'); }
+        else if (S.fmQs.length) { S.screen = 'mid'; fx('fanfare'); }
+        else S.screen = 'final';
       }
       else if (s === 'mid') { S.screen = S.fmQs.length ? 'fmIntro' : 'final'; S.fmTeamPick = leader(); }
       else if (s === 'fmIntro') { startFastMoney(S.fmTeamPick ?? leader()); S.fm.players = S.fmPlayersPick || ['', '']; S.screen = 'fm'; fx('whoosh'); }
@@ -287,7 +289,7 @@ function stageTitle() {
     <div class="feud-mark">Family Feud</div>
     <p class="lede">A 2-team anime survey showdown</p>
     <div class="vs-line"><span class="chip team-0">Team ${esc(S.teams[0].name)}</span><span class="vs">vs</span><span class="chip team-1">Team ${esc(S.teams[1].name)}</span></div>
-    <div class="pills"><span>${S.rounds.length} rounds</span><span>steals</span><span>triple points</span><span>Fast Money</span></div>
+    <div class="pills"><span>${S.rounds.length} rounds</span><span>steals</span><span>triple points</span>${S.fmQs.length ? '<span>Fast Money</span>' : '<span>highest score wins</span>'}</div>
     ${footer()}
   </div>`;
 }
@@ -307,7 +309,7 @@ function stageTeams() {
 function stageRules() {
   return `<div class="screen">
     <div class="eyebrow">Game rules</div><h2 class="h2">How to Play</h2>
-    <ol class="rules">${RULES.map((r, i) => `<li><span class="rn">${i + 1}</span>${esc(r)}</li>`).join('')}</ol>
+    <ol class="rules">${RULES.filter((r) => S.fmQs.length || !r.includes('Fast Money')).map((r, i) => `<li><span class="rn">${i + 1}</span>${esc(r)}</li>`).join('')}</ol>
     ${footer()}
   </div>`;
 }
@@ -315,7 +317,7 @@ function stageRules() {
 function stageIntro() {
   const rd = roundOf();
   return `<div class="screen center">
-    <div class="round-num">Round ${S.ri + 1}</div>
+    <div class="round-num">${S.ri === S.rounds.length - 1 && !S.fmQs.length ? 'Final Round' : `Round ${S.ri + 1}`}</div>
     <div class="mult-badge m${rd.mult}">${esc(rd.label)}${rd.mult > 1 ? ` · ×${rd.mult}` : ''}</div>
     <div class="survey-says">Survey says…</div>
     <div class="q-card">${esc(rd.q)}</div>
@@ -526,7 +528,7 @@ function boardControls() {
     <span class="hint">Correct? Click that answer.</span>${btn('✕ Steal failed', 'stealFail', {}, 'danger')}`;
   if (r.phase === 'done') row = `<span class="ctl-lbl">+${r.won} to ${esc(S.teams[r.awarded].name)}</span>
     ${r.revealed.every(Boolean) ? '' : btn('Reveal remaining', 'revealRest')}
-    ${primary(last ? 'Next: Scoreboard →' : `Next: Round ${S.ri + 2} →`)}`;
+    ${primary(last ? (S.fmQs.length ? 'Next: Scoreboard →' : 'Next: Final scores →') : `Next: Round ${S.ri + 2} →`)}`;
   return `<div class="ctl-row">${row}</div>${answerKey(false)}${scoreFix()}`;
 }
 
@@ -641,7 +643,8 @@ if (!IS_BOARD) {
     if (e.key.toLowerCase() === 'x' && S.screen === 'board') return A.strike();
     if (e.key === 'ArrowRight' || e.key === 'Enter') { const p = document.querySelector('.controls .btn.primary'); if (p) { e.preventDefault(); p.click(); } }
   });
-  S = loadGame() || newGame();
+  S = loadGame();
+  if (!S || S.v !== loadConfig().version) S = newGame();
   if (S.fm) S.fm.running = false;
   lastFx = S.fx ? S.fx.id : 0;     // don't replay the last sound on refresh
   render();
@@ -650,7 +653,8 @@ if (!IS_BOARD) {
 } else {
   document.body.classList.add('is-board');
   document.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'f') A.fullscreen(); });
-  S = loadGame() || newGame();
+  S = loadGame();
+  if (!S || S.v !== loadConfig().version) S = newGame();
   lastFx = S.fx ? S.fx.id : 0;
   render();
   channel.post({ t: 'hello' });

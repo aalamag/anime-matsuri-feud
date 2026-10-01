@@ -62,7 +62,9 @@ function lineupHTML() {
 
 function fmHTML() {
   const f = cfg.fastMoney;
-  return `<div class="lineup">${f.qids.map((id, i) => `<div class="fm-pick" style="grid-template-columns:34px minmax(0,1fr) 36px">
+  const on = `<label class="chk" style="margin-bottom:12px"><input type="checkbox" data-k="fm.enabled" ${f.enabled !== false ? 'checked' : ''}> Play Fast Money after the last round</label>`;
+  if (f.enabled === false) return on + '<p class="note">Off — the game ends after the last round and the highest score wins.</p>';
+  return on + `<div class="lineup">${f.qids.map((id, i) => `<div class="fm-pick" style="grid-template-columns:34px minmax(0,1fr) 36px">
       <span class="lu-n">Q${i + 1}</span>
       <select data-k="fm.qid" data-i="${i}" aria-label="Fast Money question ${i + 1}">${options('fm', id)}</select>
       <button class="btn icon-btn" data-act="delFm" data-i="${i}" title="Remove" ${f.qids.length <= 1 ? 'disabled' : ''}>✕</button></div>`).join('')}
@@ -180,6 +182,7 @@ function onField(el) {
     case 'fm.t1': f.timers[1] = num(el.value, 5); break;
     case 'fm.bonus': f.bonus = num(el.value); break;
     case 'fm.counts': f.countsToScore = el.checked; break;
+    case 'fm.enabled': f.enabled = el.checked; rerender = true; break;
     case 'q.q': q.q = el.value; break;
     case 'q.kind': {
       if (usedIds().has(q.id)) { alert('This question is in the current lineup. Swap it out of the lineup first.'); el.value = q.kind; return; }
@@ -218,7 +221,7 @@ root.addEventListener('click', (e) => {
   const firstOf = (kind) => cfg.bank.find((b) => b.kind === kind)?.id;
   switch (act) {
     case 'save':
-      if (cfg.rounds.some((r) => !qById()[r.qid]) || f.qids.some((id) => !qById()[id])) return alert('Every round and Fast Money slot needs a question.');
+      if (cfg.rounds.some((r) => !qById()[r.qid]) || (f.enabled !== false && f.qids.some((id) => !qById()[id]))) return alert('Every round and Fast Money slot needs a question.');
       saveConfig(cfg) ? (dirty = false, savedMsg = '✓ Saved — applies on the next New game') : alert('Could not save (browser storage blocked?).');
       break;
     case 'discard': if (dirty && !confirm('Discard unsaved changes?')) return; cfg = loadConfig(); dirty = false; savedMsg = ''; break;
