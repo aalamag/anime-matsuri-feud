@@ -608,18 +608,59 @@ function render() {
   const key = `${S.screen}:${S.ri}:${S.fm ? S.fm.cur : ''}`;
   const enter = key !== lastScreenKey ? ' enter' : '';
   lastScreenKey = key;
-  const stage = `<div class="stage s-${S.screen}${enter}">${stageHTML(fresh)}${strikeOverlay(fresh)}</div>`;
-  if (IS_BOARD) {
-    app.innerHTML = `<div class="board-view">${stage}</div>
-      <button class="sound-gate" data-action="enableSound">Click to enable sound &amp; start the audience screen</button>`;
-  } else {
-    app.innerHTML = `<div class="host">
-      <header id="hostbar" class="hostbar">${hostBarHTML()}</header>
-      <div class="stage-wrap">${stage}</div>
-      <section id="controls" class="controls">${controlsHTML()}</section>
-    </div>`;
+  // The skeleton (incl. the animated scenery) is built once; only the content layer is redrawn.
+  if (!document.getElementById('stage')) {
+    const stage = `<div id="stage" class="stage">${sceneryHTML()}<div id="stage-content" class="stage-content"></div></div>`;
+    app.innerHTML = IS_BOARD
+      ? `<div class="board-view">${stage}</div>
+         <button class="sound-gate" data-action="enableSound">Click to enable sound &amp; start the audience screen</button>`
+      : `<div class="host">
+          <header id="hostbar" class="hostbar"></header>
+          <div class="stage-wrap">${stage}</div>
+          <section id="controls" class="controls"></section>
+        </div>`;
   }
+  document.getElementById('stage').className = `stage s-${S.screen}${enter}`;
+  document.getElementById('stage-content').innerHTML = stageHTML(fresh) + strikeOverlay(fresh);
+  renderHostBar();
+  renderControls();
   playFx();
+}
+
+// ---------------------------------------------------------------- scenery (painted-sky backdrop)
+
+function sootSprite(i) {
+  // fuzzy ball: a 28-point star with a tiny radius wobble, plus two eyes
+  const pts = Array.from({ length: 56 }, (_, k) => {
+    const a = (k / 56) * Math.PI * 2, r = k % 2 ? 9.2 : 11.4 + ((k * 7) % 3) * 0.4;
+    return `${(12 + r * Math.cos(a)).toFixed(2)},${(12 + r * Math.sin(a)).toFixed(2)}`;
+  }).join(' ');
+  return `<span class="soot soot-${i}"><svg viewBox="0 0 24 24" aria-hidden="true">
+    <polygon points="${pts}" fill="#4B3D4F"/>
+    <circle cx="8.8" cy="11" r="2.7" fill="#fff"/><circle cx="15.2" cy="11" r="2.7" fill="#fff"/>
+    <circle cx="9.3" cy="11.4" r="1.1" fill="#4B3D4F"/><circle cx="15.7" cy="11.4" r="1.1" fill="#4B3D4F"/>
+  </svg></span>`;
+}
+
+function sceneryHTML() {
+  const cloud = (i) => `<svg class="cloud cloud-${i}" viewBox="0 0 220 90" aria-hidden="true"><g fill="#fff">
+      <circle cx="55" cy="58" r="30"/><circle cx="95" cy="40" r="38"/><circle cx="142" cy="50" r="31"/><circle cx="175" cy="64" r="22"/>
+      <rect x="30" y="58" width="165" height="30" rx="15"/></g></svg>`;
+  return `<div class="scenery" aria-hidden="true">
+    <div class="sun"></div>
+    ${[0, 1, 2, 3].map(cloud).join('')}
+    <svg class="hills" viewBox="0 0 1600 320" preserveAspectRatio="none">
+      <path class="hill-far" d="M0 170 C 180 90 360 120 520 150 S 860 70 1060 120 S 1400 150 1600 90 L1600 320 L0 320 Z"/>
+      <g class="tree">
+        <rect x="1238" y="118" width="14" height="60" rx="5"/>
+        <circle cx="1245" cy="96" r="44"/><circle cx="1205" cy="112" r="30"/><circle cx="1286" cy="110" r="32"/><circle cx="1246" cy="62" r="30"/>
+      </g>
+      <path class="hill-mid" d="M0 220 C 220 160 420 200 640 205 S 1000 150 1240 175 S 1480 215 1600 190 L1600 320 L0 320 Z"/>
+      <path class="hill-near" d="M0 275 C 260 240 520 270 800 262 S 1300 238 1600 268 L1600 320 L0 320 Z"/>
+    </svg>
+    <div class="soots">${[0, 1, 2, 3].map(sootSprite).join('')}</div>
+    <div class="grain"></div>
+  </div>`;
 }
 
 // ---------------------------------------------------------------- boot
